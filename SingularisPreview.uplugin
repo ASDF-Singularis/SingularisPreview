@@ -3,7 +3,7 @@
     "Version": 1,
     "VersionName": "0.1.0",
     "FriendlyName": "SingularisPreview",
-    "Description": "",
+    		"Description": "Singularis 生态预览系统。为即将落地生成的目标演员提供幽灵预览表现，支持变换驱动、合法/非法材质反馈与状态事件广播，纯客户端视觉层，与具体生成逻辑完全解耦。",
     "Category": "Singularis",
     "CreatedBy": "TrifingZW",
     "CreatedByURL": "",
