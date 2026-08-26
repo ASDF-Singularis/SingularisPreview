@@ -34,7 +34,8 @@ void USingularisPreviewComponent::SetPreviewActorClass(const TSubclassOf<AActor>
 	PreviewActorClass = NewActorClass;
 
 	// 2) 预览进行中按新类重建幽灵实例,保持当前变换
-	if (bIsPreviewing)
+	//    新类为空时重建直接返回,预览随之自然结束
+	if (IsPreviewing())
 	{
 		DestroyPreviewActor();
 		SpawnPreviewActor();
@@ -43,22 +44,24 @@ void USingularisPreviewComponent::SetPreviewActorClass(const TSubclassOf<AActor>
 
 void USingularisPreviewComponent::StartPreview()
 {
-	// 1) 幂等:已在预览状态时直接返回
-	if (bIsPreviewing) return;
-	bIsPreviewing = true;
+	// 1) 幂等:已有预览演员时直接返回
+	if (IsPreviewing()) return;
 
-	// 2) 生成幽灵预览演员
+	// 2) 零信任:未配置预览演员类时直接返回,不进入预览状态
+	if (!PreviewActorClass) return;
+
+	// 3) 生成幽灵预览演员,生成失败则不进入预览状态
 	SpawnPreviewActor();
+	if (!IsPreviewing()) return;
 
-	// 3) 广播预览启动事件
+	// 4) 广播预览启动事件
 	OnPreviewStarted.Broadcast();
 }
 
 void USingularisPreviewComponent::StopPreview()
 {
-	// 1) 幂等:非预览状态时直接返回
-	if (!bIsPreviewing) return;
-	bIsPreviewing = false;
+	// 1) 幂等:无预览演员时直接返回
+	if (!IsPreviewing()) return;
 
 	// 2) 销毁幽灵预览演员
 	DestroyPreviewActor();
@@ -158,7 +161,7 @@ void USingularisPreviewComponent::ApplyValidityMaterial() const
 		if (!Primitive.IsValid()) continue;
 
 		const int32 MaterialCount = Primitive->GetNumMaterials();
-		for (int32 Index = 0; Index < MaterialCount; ++Index)
+		for (auto Index = 0; Index < MaterialCount; ++Index)
 			Primitive->SetMaterial(Index, Material);
 	}
 }

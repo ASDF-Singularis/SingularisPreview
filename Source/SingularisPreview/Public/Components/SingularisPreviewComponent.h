@@ -98,7 +98,7 @@ public:
 private:
 #pragma region Internal Variable
 
-	/** 当前幽灵预览演员实例 */
+	/** 当前幽灵预览演员实例,其有效性即预览状态 */
 	TWeakObjectPtr<AActor> PreviewActor = nullptr;
 
 	/** 预览演员上缓存的可替换材质的图元集合 */
@@ -110,10 +110,7 @@ private:
 	/** 当前预览变换,重建预览实例时用于恢复 */
 	FTransform PreviewTransform{};
 
-	/** 是否处于预览状态 */
-	bool bIsPreviewing = false;
-
-	/** 当前合法性状态 */
+	/** 当前合法性状态,由外部 SetPreviewValidity 驱动 */
 	bool bIsValid = true;
 
 #pragma endregion
@@ -137,7 +134,9 @@ public:
 	/**
 	 * 当前是否处于预览状态。
 	 *
-	 * @return 预览进行中返回 true。
+	 * 由预览演员实例的有效性直接推导,无冗余状态。
+	 *
+	 * @return 存在有效的预览演员时返回 true。
 	 */
 	UFUNCTION(
 		BlueprintPure,
@@ -145,7 +144,7 @@ public:
 		Category = "SingularisPreview|引力奇点预览组件|State",
 		meta = (DisplayName = "IsPreviewing")
 	)
-	bool IsPreviewing() const { return bIsPreviewing; }
+	bool IsPreviewing() const { return PreviewActor.IsValid(); }
 
 	/**
 	 * 获取当前预览演员实例。
