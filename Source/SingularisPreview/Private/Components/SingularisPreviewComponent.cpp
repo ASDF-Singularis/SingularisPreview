@@ -34,7 +34,7 @@ void USingularisPreviewComponent::SetPreviewActorClass(const TSubclassOf<AActor>
 	PreviewActorClass = NewActorClass;
 
 	// 2) 预览进行中按新类重建幽灵实例,保持当前变换
-	if (bIsPreviewing)
+	if (IsPreviewing())
 	{
 		DestroyPreviewActor();
 		SpawnPreviewActor();
@@ -158,7 +158,7 @@ void USingularisPreviewComponent::ApplyValidityMaterial() const
 		if (!Primitive.IsValid()) continue;
 
 		const int32 MaterialCount = Primitive->GetNumMaterials();
-		for (int32 Index = 0; Index < MaterialCount; ++Index)
+		for (auto Index = 0; Index < MaterialCount; ++Index)
 			Primitive->SetMaterial(Index, Material);
 	}
 }
