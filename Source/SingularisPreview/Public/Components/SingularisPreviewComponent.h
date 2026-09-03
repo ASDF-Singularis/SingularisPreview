@@ -176,7 +176,7 @@ public:
 		Category = "SingularisPreview|引力奇点预览组件|API",
 		meta = (DisplayName = "SetPreviewActorClass")
 	)
-	void SetPreviewActorClass(TSubclassOf<AActor> NewActorClass);
+	void SetPreviewActorClass(TSubclassOf<AActor> NewActorClass = nullptr);
 
 	/**
 	 * 启动预览。幂等,已在预览状态时直接返回。
