@@ -11,10 +11,13 @@ class UPrimitiveComponent;
 
 #pragma region 委托签名
 
+/** 预览启动时广播 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPreviewStartedSignature);
 
+/** 预览停止时广播 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPreviewStoppedSignature);
 
+/** 合法性状态变化时广播，携带当前合法性 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPreviewValidityChangedSignature, bool, bIsValid);
 
 #pragma endregion
@@ -22,9 +25,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPreviewValidityChangedSignature, 
 /**
  * 引力奇点预览组件。
  *
- * 为即将落地生成的目标演员提供"幽灵"预览表现:按预览演员类动态生成一个
- * 关闭碰撞与物理的预览实例,由外部驱动其变换与合法性(合法/非法)反馈。
- * 纯客户端视觉层,不参与网络复制,亦不承载实际生成逻辑。
+ * 为即将落地生成的目标演员提供"幽灵"预览表现：按预览演员类动态生成一个
+ * 关闭碰撞与物理的预览实例，由外部驱动其变换与合法性（合法/非法）反馈。
+ * 纯客户端视觉层，不参与网络复制，也不承载实际生成逻辑。
  */
 UCLASS(
 	Blueprintable,
@@ -42,12 +45,12 @@ public:
 	/**
 	 * 合法状态材质。
 	 *
-	 * 应用于预览演员的全部图元槽位,通常为半透明绿色材质。
+	 * 应用于预览演员的全部图元槽位，通常为半透明绿色材质。
 	 */
 	UPROPERTY(
 		EditDefaultsOnly,
 		BlueprintReadOnly,
-		Category = "SingularisPreview|引力奇点预览组件|参数",
+		Category = "引力奇点预览组件",
 		meta = (DisplayName = "合法材质")
 	)
 	TObjectPtr<UMaterialInterface> ValidMaterial = nullptr;
@@ -55,48 +58,48 @@ public:
 	/**
 	 * 非法状态材质。
 	 *
-	 * 应用于预览演员的全部图元槽位,通常为半透明红色材质。
+	 * 应用于预览演员的全部图元槽位，通常为半透明红色材质。
 	 */
 	UPROPERTY(
 		EditDefaultsOnly,
 		BlueprintReadOnly,
-		Category = "SingularisPreview|引力奇点预览组件|参数",
+		Category = "引力奇点预览组件",
 		meta = (DisplayName = "非法材质")
 	)
 	TObjectPtr<UMaterialInterface> InvalidMaterial = nullptr;
 
 #pragma endregion
 
-#pragma region 事件分发器
+#pragma region Event Dispatcher
 
 	/** 预览启动时广播 */
 	UPROPERTY(
 		BlueprintAssignable,
-		Category = "SingularisPreview|引力奇点预览组件|事件分发器",
+		Category = "引力奇点预览组件|事件分发器",
 		meta = (DisplayName = "预览启动时触发")
 	)
-	FOnPreviewStartedSignature OnPreviewStarted{};
+	FOnPreviewStartedSignature OnPreviewStartedEvent{};
 
 	/** 预览停止时广播 */
 	UPROPERTY(
 		BlueprintAssignable,
-		Category = "SingularisPreview|引力奇点预览组件|事件分发器",
+		Category = "引力奇点预览组件|事件分发器",
 		meta = (DisplayName = "预览停止时触发")
 	)
-	FOnPreviewStoppedSignature OnPreviewStopped{};
+	FOnPreviewStoppedSignature OnPreviewStoppedEvent{};
 
 	/** 合法性状态变化时广播 */
 	UPROPERTY(
 		BlueprintAssignable,
-		Category = "SingularisPreview|引力奇点预览组件|事件分发器",
+		Category = "引力奇点预览组件|事件分发器",
 		meta = (DisplayName = "合法性变化时触发")
 	)
-	FOnPreviewValidityChangedSignature OnPreviewValidityChanged{};
+	FOnPreviewValidityChangedSignature OnPreviewValidityChangedEvent{};
 
 #pragma endregion
 
 private:
-#pragma region Internal Variable
+#pragma region State
 
 	/** 当前幽灵预览演员实例 */
 	TWeakObjectPtr<AActor> PreviewActor = nullptr;
@@ -104,10 +107,10 @@ private:
 	/** 预览演员上缓存的可替换材质的图元集合 */
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> PreviewPrimitives{};
 
-	/** 当前预览演员类,由 SetPreviewActorClass 动态驱动 */
+	/** 当前预览演员类，由 SetPreviewActorClass 动态驱动 */
 	TSubclassOf<AActor> PreviewActorClass = nullptr;
 
-	/** 当前预览变换,重建预览实例时用于恢复 */
+	/** 当前预览变换，重建预览实例时用于恢复 */
 	FTransform PreviewTransform{};
 
 	/** 是否处于预览状态 */
@@ -127,104 +130,101 @@ public:
 
 #pragma region ActorComponent Interface
 
-	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-#pragma endregion
-
-#pragma region State
-
-	/**
-	 * 当前是否处于预览状态。
-	 *
-	 * @return 预览进行中返回 true。
-	 */
-	UFUNCTION(
-		BlueprintPure,
-		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|State",
-		meta = (DisplayName = "IsPreviewing")
-	)
-	bool IsPreviewing() const { return bIsPreviewing; }
-
-	/**
-	 * 获取当前预览演员实例。
-	 *
-	 * @return 预览演员,未在预览时返回 nullptr。
-	 */
-	UFUNCTION(
-		BlueprintPure,
-		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|State",
-		meta = (DisplayName = "GetPreviewActor")
-	)
-	AActor* GetPreviewActor() const { return PreviewActor.Get(); }
 
 #pragma endregion
 
 #pragma region API
 
 	/**
-	 * 动态设置预览演员类。幂等,类未变化时直接返回。
+	 * 动态设置预览演员类。幂等，类未变化时直接返回。
 	 *
-	 * 预览进行中调用将按新类重建幽灵实例,并保持当前变换与合法性状态。
+	 * 预览进行中调用将按新类重建幽灵实例，并保持当前变换与合法性状态。
 	 *
 	 * @param NewActorClass 新的预览演员类。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|API",
-		meta = (DisplayName = "SetPreviewActorClass")
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "设置预览演员类")
 	)
 	void SetPreviewActorClass(TSubclassOf<AActor> NewActorClass = nullptr);
 
 	/**
-	 * 启动预览。幂等,已在预览状态时直接返回。
+	 * 开始预览。幂等，已在预览状态时直接返回。
 	 *
 	 * 按当前预览演员类生成幽灵实例并应用当前合法性材质。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|API",
-		meta = (DisplayName = "StartPreview")
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "开始预览")
 	)
 	void StartPreview();
 
 	/**
-	 * 停止预览。幂等,非预览状态时直接返回。
+	 * 结束预览。幂等，非预览状态时直接返回。
 	 *
-	 * 销毁幽灵实例并广播停止事件。
+	 * 销毁幽灵实例并广播预览停止事件。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|API",
-		meta = (DisplayName = "StopPreview")
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "结束预览")
 	)
 	void StopPreview();
 
 	/**
-	 * 更新预览变换(如射线命中点)。
+	 * 更新预览变换（如射线命中点）。
 	 *
 	 * @param Transform 预览目标变换。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|API",
-		meta = (DisplayName = "SetPreviewTransform")
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "设置预览变换")
 	)
 	void SetPreviewTransform(const FTransform& Transform);
 
 	/**
-	 * 更新预览合法性并刷新反馈材质。幂等,状态未变化时直接返回。
+	 * 更新预览合法性并刷新反馈材质。幂等，状态未变化时直接返回。
 	 *
-	 * @param bNewValidity 是否合法,合法使用 ValidMaterial,非法使用 InvalidMaterial。
+	 * @param bNewValidity 是否合法，合法使用 ValidMaterial，非法使用 InvalidMaterial。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
-		Category = "SingularisPreview|引力奇点预览组件|API",
-		meta = (DisplayName = "SetPreviewValidity")
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "设置预览合法性")
 	)
 	void SetPreviewValidity(bool bNewValidity);
+
+#pragma endregion
+
+#pragma region SPI
+
+	/**
+	 * 是否处于预览状态。
+	 *
+	 * @return 预览进行中返回 true。
+	 */
+	UFUNCTION(
+		BlueprintPure,
+		Category = "引力奇点预览组件|SPI",
+		meta = (DisplayName = "是否预览中")
+	)
+	bool IsPreviewing() const { return bIsPreviewing; }
+
+	/**
+	 * 获取当前预览演员实例。
+	 *
+	 * @return 预览演员，未在预览时返回 nullptr。
+	 */
+	UFUNCTION(
+		BlueprintPure,
+		Category = "引力奇点预览组件|SPI",
+		meta = (DisplayName = "获取预览演员")
+	)
+	AActor* GetPreviewActor() const { return PreviewActor.Get(); }
 
 #pragma endregion
 
@@ -233,7 +233,8 @@ private:
 
 	/**
 	 * 生成幽灵预览演员并缓存可替换材质的图元。
-	 * 生成后关闭碰撞、物理、阴影与实时表现,仅保留纯视觉。
+	 *
+	 * 生成后关闭碰撞、物理、阴影与实时表现，仅保留纯视觉。
 	 */
 	void SpawnPreviewActor();
 
@@ -244,7 +245,8 @@ private:
 
 	/**
 	 * 按当前合法性状态刷新预览演员全部图元的材质。
-	 * 未配置对应材质时跳过替换,保持演员默认材质。
+	 *
+	 * 未配置对应材质时保持当前材质不变。
 	 */
 	void ApplyValidityMaterial() const;
 

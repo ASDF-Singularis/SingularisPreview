@@ -6,7 +6,6 @@ public class SingularisPreview : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-
 		PrivateDependencyModuleNames.AddRange(
 			[
 				"Core",
