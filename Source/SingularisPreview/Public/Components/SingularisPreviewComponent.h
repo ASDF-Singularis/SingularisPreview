@@ -144,7 +144,7 @@ public:
 	UFUNCTION(
 		BlueprintPure,
 		Category = "引力奇点预览组件|API",
-		meta = (DisplayName = "是否预览中")
+		meta = (DisplayName = "预览中")
 	)
 	bool IsPreviewing() const { return bIsPreviewing; }
 
@@ -159,6 +159,20 @@ public:
 		meta = (DisplayName = "获取预览演员")
 	)
 	AActor* GetPreviewActor() const { return PreviewActor.Get(); }
+
+	/**
+	 * 获取当前预览变换。
+	 *
+	 * 通过预览演员实时获取；无有效预览演员时回退到缓存的预览变换。
+	 *
+	 * @return 预览演员的世界变换，或缓存的预览变换。
+	 */
+	UFUNCTION(
+		BlueprintPure,
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "获取预览变换")
+	)
+	const FTransform& GetPreviewTransform() const;
 
 	/**
 	 * 是否存在有效预览。

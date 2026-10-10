@@ -22,6 +22,16 @@ void USingularisPreviewComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 	Super::EndPlay(EndPlayReason);
 }
 
+const FTransform& USingularisPreviewComponent::GetPreviewTransform() const
+{
+	// 1) 通过预览演员实时获取
+	if (const AActor* Actor = PreviewActor.Get())
+		return Actor->GetActorTransform();
+
+	// 2) 无有效预览演员时回退到缓存变换
+	return PreviewTransform;
+}
+
 void USingularisPreviewComponent::SetPreviewActorClass(const TSubclassOf<AActor> NewActorClass)
 {
 	// 1) 幂等：演员类未变化时直接返回
