@@ -137,6 +137,44 @@ public:
 #pragma region API
 
 	/**
+	 * 是否处于预览状态。
+	 *
+	 * @return 预览进行中返回 true。
+	 */
+	UFUNCTION(
+		BlueprintPure,
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "是否预览中")
+	)
+	bool IsPreviewing() const { return bIsPreviewing; }
+
+	/**
+	 * 获取当前预览演员实例。
+	 *
+	 * @return 预览演员，未在预览时返回 nullptr。
+	 */
+	UFUNCTION(
+		BlueprintPure,
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "获取预览演员")
+	)
+	AActor* GetPreviewActor() const { return PreviewActor.Get(); }
+
+	/**
+	 * 是否存在有效预览。
+	 *
+	 * 预览进行中且预览演员有效时返回 true。
+	 *
+	 * @return 存在有效预览返回 true。
+	 */
+	UFUNCTION(
+		BlueprintPure,
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "存在有效预览")
+	)
+	bool HasActivePreview() const { return bIsPreviewing && PreviewActor.IsValid(); }
+
+	/**
 	 * 动态设置预览演员类。幂等，类未变化时直接返回。
 	 *
 	 * 预览进行中调用将按新类重建幽灵实例，并保持当前变换与合法性状态。
@@ -197,34 +235,6 @@ public:
 		meta = (DisplayName = "设置预览合法性")
 	)
 	void SetPreviewValidity(bool bNewValidity);
-
-#pragma endregion
-
-#pragma region SPI
-
-	/**
-	 * 是否处于预览状态。
-	 *
-	 * @return 预览进行中返回 true。
-	 */
-	UFUNCTION(
-		BlueprintPure,
-		Category = "引力奇点预览组件|SPI",
-		meta = (DisplayName = "是否预览中")
-	)
-	bool IsPreviewing() const { return bIsPreviewing; }
-
-	/**
-	 * 获取当前预览演员实例。
-	 *
-	 * @return 预览演员，未在预览时返回 nullptr。
-	 */
-	UFUNCTION(
-		BlueprintPure,
-		Category = "引力奇点预览组件|SPI",
-		meta = (DisplayName = "获取预览演员")
-	)
-	AActor* GetPreviewActor() const { return PreviewActor.Get(); }
 
 #pragma endregion
 
