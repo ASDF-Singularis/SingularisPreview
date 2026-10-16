@@ -107,7 +107,7 @@ private:
 	/** 预览演员上缓存的可替换材质的图元集合 */
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> PreviewPrimitives{};
 
-	/** 当前预览演员类，由 SetPreviewActorClass 动态驱动 */
+	/** 当前预览演员类，由 UsePreviewActorClass 动态驱动 */
 	TSubclassOf<AActor> PreviewActorClass = nullptr;
 
 	/** 当前预览变换，重建预览实例时用于恢复 */
@@ -189,18 +189,31 @@ public:
 	bool HasActivePreview() const { return bIsPreviewing && PreviewActor.IsValid(); }
 
 	/**
-	 * 动态设置预览演员类。幂等，类未变化时直接返回。
+	 * 使用预览演员类。
 	 *
-	 * 预览进行中调用将按新类重建幽灵实例，并保持当前变换与合法性状态。
+	 * 幂等，类未变化时直接返回；非预览状态仅缓存待下次启动使用，
+	 * 预览进行中按新类重建幽灵实例，并保持当前变换与合法性状态。
 	 *
-	 * @param NewActorClass 新的预览演员类。
+	 * @param NewActorClass 新的预览演员类，为空时静默忽略。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
 		Category = "引力奇点预览组件|API",
-		meta = (DisplayName = "设置预览演员类")
+		meta = (DisplayName = "使用预览演员类")
 	)
-	void SetPreviewActorClass(TSubclassOf<AActor> NewActorClass = nullptr);
+	void UsePreviewActorClass(TSubclassOf<AActor> NewActorClass);
+
+	/**
+	 * 清除预览演员类。
+	 *
+	 * 幂等，未配置时直接返回；预览进行中同步销毁幽灵实例。
+	 */
+	UFUNCTION(
+		BlueprintCallable,
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "清除预览演员类")
+	)
+	void ClearPreviewActorClass();
 
 	/**
 	 * 开始预览。幂等，已在预览状态时直接返回。
@@ -227,28 +240,42 @@ public:
 	void StopPreview();
 
 	/**
-	 * 更新预览变换（如射线命中点）。
+	 * 移动预览到目标变换（如射线命中点）。
+	 *
+	 * 未在预览时仅缓存变换，供下次启动时恢复。
 	 *
 	 * @param Transform 预览目标变换。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
 		Category = "引力奇点预览组件|API",
-		meta = (DisplayName = "设置预览变换")
+		meta = (DisplayName = "移动预览")
 	)
-	void SetPreviewTransform(const FTransform& Transform);
+	void MovePreview(const FTransform& Transform);
 
 	/**
-	 * 更新预览合法性并刷新反馈材质。幂等，状态未变化时直接返回。
+	 * 标记预览为合法。
 	 *
-	 * @param bNewValidity 是否合法，合法使用 ValidMaterial，非法使用 InvalidMaterial。
+	 * 幂等，已合法时直接返回；状态变化后刷新反馈材质并广播事件。
 	 */
 	UFUNCTION(
 		BlueprintCallable,
 		Category = "引力奇点预览组件|API",
-		meta = (DisplayName = "设置预览合法性")
+		meta = (DisplayName = "标记预览合法")
 	)
-	void SetPreviewValidity(bool bNewValidity);
+	void MarkPreviewValid();
+
+	/**
+	 * 标记预览为非法。
+	 *
+	 * 幂等，已非法时直接返回；状态变化后刷新反馈材质并广播事件。
+	 */
+	UFUNCTION(
+		BlueprintCallable,
+		Category = "引力奇点预览组件|API",
+		meta = (DisplayName = "标记预览非法")
+	)
+	void MarkPreviewInvalid();
 
 #pragma endregion
 
@@ -273,6 +300,36 @@ private:
 	 * 未配置对应材质时保持当前材质不变。
 	 */
 	void ApplyValidityMaterial() const;
+
+	/**
+	 * 设置预览演员类并应用副作用。
+	 *
+	 * 幂等。写入新状态后调用 ApplyPreviewActorClass，允许传入空类。
+	 *
+	 * @param NewActorClass 新的预览演员类。
+	 */
+	void SetPreviewActorClass(TSubclassOf<AActor> NewActorClass);
+
+	/**
+	 * 应用预览演员类变化到幽灵实例。
+	 *
+	 * 非预览状态仅缓存，预览进行中按新类重建幽灵实例。
+	 */
+	void ApplyPreviewActorClass();
+
+	/**
+	 * 设置预览合法性并应用副作用。
+	 *
+	 * 幂等。写入新状态后调用 ApplyPreviewValidity。
+	 *
+	 * @param bValidity 新的合法性状态。
+	 */
+	void SetPreviewValidity(bool bValidity);
+
+	/**
+	 * 应用合法性变化到反馈材质与事件广播。
+	 */
+	void ApplyPreviewValidity();
 
 #pragma endregion
 };

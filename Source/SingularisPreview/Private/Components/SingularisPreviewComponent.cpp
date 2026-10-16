@@ -32,18 +32,22 @@ const FTransform& USingularisPreviewComponent::GetPreviewTransform() const
 	return PreviewTransform;
 }
 
-void USingularisPreviewComponent::SetPreviewActorClass(const TSubclassOf<AActor> NewActorClass)
+void USingularisPreviewComponent::UsePreviewActorClass(const TSubclassOf<AActor> NewActorClass)
 {
-	// 1) 幂等：演员类未变化时直接返回
-	if (PreviewActorClass == NewActorClass) return;
-	PreviewActorClass = NewActorClass;
+	// 1) 零信任：类为空时静默忽略，空类语义由 ClearPreviewActorClass 承载
+	if (!NewActorClass) return;
 
-	// 2) 非预览状态仅缓存，等待下次启动时按新类生成
-	if (!IsPreviewing()) return;
+	// 2) 委托内部状态流转
+	SetPreviewActorClass(NewActorClass);
+}
 
-	// 3) 预览进行中按新类重建幽灵实例，保持当前变换与合法性
-	DestroyPreviewActor();
-	SpawnPreviewActor();
+void USingularisPreviewComponent::ClearPreviewActorClass()
+{
+	// 1) 幂等性检查，未配置预览演员类时直接返回
+	if (!PreviewActorClass) return;
+
+	// 2) 委托内部状态流转
+	SetPreviewActorClass(nullptr);
 }
 
 void USingularisPreviewComponent::StartPreview()
@@ -72,7 +76,7 @@ void USingularisPreviewComponent::StopPreview()
 	OnPreviewStoppedEvent.Broadcast();
 }
 
-void USingularisPreviewComponent::SetPreviewTransform(const FTransform& Transform)
+void USingularisPreviewComponent::MovePreview(const FTransform& Transform)
 {
 	// 1) 缓存目标变换，供重建预览实例时恢复
 	PreviewTransform = Transform;
@@ -84,17 +88,18 @@ void USingularisPreviewComponent::SetPreviewTransform(const FTransform& Transfor
 	PreviewActor->SetActorTransform(Transform);
 }
 
-void USingularisPreviewComponent::SetPreviewValidity(const bool bNewValidity)
+void USingularisPreviewComponent::MarkPreviewValid()
 {
-	// 1) 幂等：合法性状态未变化时直接返回
-	if (bIsValid == bNewValidity) return;
-	bIsValid = bNewValidity;
+	if (bIsValid) return;
 
-	// 2) 刷新反馈材质
-	ApplyValidityMaterial();
+	SetPreviewValidity(true);
+}
 
-	// 3) 广播合法性变化事件
-	OnPreviewValidityChangedEvent.Broadcast(bIsValid);
+void USingularisPreviewComponent::MarkPreviewInvalid()
+{
+	if (!bIsValid) return;
+
+	SetPreviewValidity(false);
 }
 
 void USingularisPreviewComponent::SpawnPreviewActor()
@@ -164,4 +169,47 @@ void USingularisPreviewComponent::ApplyValidityMaterial() const
 		for (auto Index = 0; Index < MaterialCount; ++Index)
 			Primitive->SetMaterial(Index, Material);
 	}
+}
+
+void USingularisPreviewComponent::SetPreviewActorClass(const TSubclassOf<AActor> NewActorClass)
+{
+	// 1) 幂等性检查，若状态未变更则直接返回
+	if (PreviewActorClass == NewActorClass) return;
+
+	// 2) 写入新状态
+	PreviewActorClass = NewActorClass;
+
+	// 3) 响应式编程：应用副作用
+	ApplyPreviewActorClass();
+}
+
+void USingularisPreviewComponent::ApplyPreviewActorClass()
+{
+	// 1) 非预览状态仅缓存，等待下次启动时按新类生成
+	if (!IsPreviewing()) return;
+
+	// 2) 预览进行中按新类重建幽灵实例，保持当前变换与合法性
+	DestroyPreviewActor();
+	SpawnPreviewActor();
+}
+
+void USingularisPreviewComponent::SetPreviewValidity(const bool bValidity)
+{
+	// 1) 幂等性检查，若状态未变更则直接返回
+	if (bIsValid == bValidity) return;
+
+	// 2) 写入新状态
+	bIsValid = bValidity;
+
+	// 3) 响应式编程：应用副作用
+	ApplyPreviewValidity();
+}
+
+void USingularisPreviewComponent::ApplyPreviewValidity()
+{
+	// 1) 刷新反馈材质
+	ApplyValidityMaterial();
+
+	// 2) 广播合法性变化事件
+	OnPreviewValidityChangedEvent.Broadcast(bIsValid);
 }
